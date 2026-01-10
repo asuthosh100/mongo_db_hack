@@ -1,18 +1,18 @@
-// middleware.ts
+// proxy.ts
 import { paymentProxy } from "@x402/next";
 import { registerExactEvmScheme } from "@x402/evm/exact/server";
 import { x402ResourceServer, HTTPFacilitatorClient } from "@x402/core/server";
 
-const payTo = "0xYourAddress";
+const payTo = process.env.PAY_TO_ADDRESS!;
 
 const facilitatorClient = new HTTPFacilitatorClient({
-  url: "https://x402.org/facilitator"
+  url: process.env.FACILITATOR_URL || "https://x402.org/facilitator"
 });
 
 const server = new x402ResourceServer(facilitatorClient);
 registerExactEvmScheme(server, { networks: ["eip155:84532"] });
 
-export const middleware = paymentProxy(
+const handler = paymentProxy(
   {
     "/api/protected": {
       accepts: [
@@ -29,6 +29,10 @@ export const middleware = paymentProxy(
   },
   server,
 );
+
+export default async function proxy(req: import("next/server").NextRequest) {
+  return handler(req);
+}
 
 export const config = {
   matcher: ["/api/protected/:path*"],
